@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b0d12">
+  <title>Crypto 24H — BTC & ETH</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0d12;
+      --panel: #11141b;
+      --panel-2: #151923;
+      --border: #242a36;
+      --text: #eef2f8;
+      --muted: #8b95a7;
+      --green: #39d98a;
+      --red: #ff657a;
+      --btc: #f3a943;
+      --eth: #8d9cff;
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(ellipse at top, #121725 0%, var(--bg) 48%);
+      color: var(--text);
+      font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100vh;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 34px 22px 28px; }
+    header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 28px; }
+    .eyebrow { color: var(--muted); text-transform: uppercase; letter-spacing: .16em; font-size: 11px; font-weight: 700; }
+    h1 { font-size: clamp(27px, 4vw, 38px); letter-spacing: -.045em; line-height: 1.1; margin: 7px 0 8px; }
+    .subtitle { color: var(--muted); margin: 0; }
+    .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .status { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px #39d98a66; }
+    button {
+      appearance: none; border: 1px solid #303747; border-radius: 11px; padding: 10px 14px;
+      color: var(--text); background: #191e29; cursor: pointer; font: inherit; font-weight: 650;
+      transition: background .15s ease, border-color .15s ease;
+    }
+    button:hover { background: #222938; border-color: #465168; }
+    button:disabled { opacity: .55; cursor: wait; }
+    .summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+    .card, .chart-card { background: linear-gradient(145deg, #141821, #10131a); border: 1px solid var(--border); border-radius: var(--radius); }
+    .card { padding: 21px 22px; min-width: 0; }
+    .asset-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .asset-name { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+    .coin { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; font-size: 15px; font-weight: 800; }
+    .coin.btc { background: #f3a94320; color: var(--btc); }
+    .coin.eth { background: #8d9cff20; color: var(--eth); }
+    .ticker { display: block; color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: .06em; }
+    .change { padding: 5px 8px; border-radius: 8px; font-size: 12px; font-weight: 750; white-space: nowrap; background: #ffffff08; }
+    .positive { color: var(--green); }
+    .negative { color: var(--red); }
+    .price { font-size: clamp(27px, 4vw, 35px); font-weight: 750; letter-spacing: -.045em; margin: 20px 0 14px; font-variant-numeric: tabular-nums; }
+    .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; border-top: 1px solid var(--border); padding-top: 14px; }
+    .stat-label { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+    .stat-value { font-weight: 650; font-variant-numeric: tabular-nums; }
+    .chart-card { padding: 20px 20px 12px; margin-bottom: 16px; }
+    .chart-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+    .chart-title { font-size: 15px; font-weight: 750; }
+    .chart-description { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    .legend { color: var(--muted); font-size: 11px; white-space: nowrap; }
+    .canvas-wrap { height: 260px; position: relative; }
+    .message { color: var(--muted); text-align: center; padding: 24px 12px; font-size: 13px; }
+    .error { color: var(--red); }
+    footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; color: #727d90; font-size: 11px; padding: 6px 2px 0; }
+    a { color: #a9b6ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    @media (max-width: 680px) {
+      .wrap { padding: 24px 14px; }
+      header { flex-direction: column; }
+      .actions { width: 100%; justify-content: space-between; }
+      .summary { grid-template-columns: 1fr; gap: 12px; }
+      .card { padding: 18px; }
+      .chart-card { padding: 16px 12px 10px; }
+      .canvas-wrap { height: 220px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <div class="eyebrow">Market overview / 24 horas</div>
+        <h1>Crypto<span style="color:#69758d">.</span>24H</h1>
+        <p class="subtitle">Bitcoin y Ethereum · datos de mercado de Binance</p>
+      </div>
+      <div class="actions">
+        <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Conectando con Binance…</span></div>
+        <button id="refreshBtn" type="button">↻ Actualizar</button>
+      </div>
+    </header>
+
+    <section class="summary" aria-label="Resumen de mercado">
+      <article class="card" aria-labelledby="btcName">
+        <div class="asset-head">
+          <div class="asset-name"><span class="coin btc">₿</span><div><span id="btcName">Bitcoin</span><span class="ticker">BTC / USDT</span></div></div>
+          <span class="change" id="btcChange">—</span>
+        </div>
+        <div class="price" id="btcPrice">Cargando…</div>
+        <div class="stats">
+          <div><div class="stat-label">Máximo · 24 h</div><div class="stat-value" id="btcHigh">—</div></div>
+          <div><div class="stat-label">Mínimo · 24 h</div><div class="stat-value" id="btcLow">—</div></div>
+        </div>
+      </article>
+
+      <article class="card" aria-labelledby="ethName">
+        <div class="asset-head">
+          <div class="asset-name"><span class="coin eth">◆</span><div><span id="ethName">Ethereum</span><span class="ticker">ETH / USDT</span></div></div>
+          <span class="change" id="ethChange">—</span>
+        </div>
+        <div class="price" id="ethPrice">Cargando…</div>
+        <div class="stats">
+          <div><div class="stat-label">Máximo · 24 h</div><div class="stat-value" id="ethHigh">—</div></div>
+          <div><div class="stat-label">Mínimo · 24 h</div><div class="stat-value" id="ethLow">—</div></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="chart-card" aria-labelledby="btcChartTitle">
+      <div class="chart-top">
+        <div><div class="chart-title" id="btcChartTitle">Bitcoin <span style="color:var(--btc)">/ BTCUSDT</span></div><div class="chart-description">Evolución del precio durante las últimas 24 horas</div></div>
+        <div class="legend">● Cierre · intervalo 5 min</div>
+      </div>
+      <div class="canvas-wrap"><canvas id="btcChart" aria-label="Gráfico de precio de Bitcoin en 24 horas"></canvas></div>
+      <div class="message" id="btcMessage" hidden></div>
+    </section>
+
+    <section class="chart-card" aria-labelledby="ethChartTitle">
+      <div class="chart-top">
+        <div><div class="chart-title" id="ethChartTitle">Ethereum <span style="color:var(--eth)">/ ETHUSDT</span></div><div class="chart-description">Evolución del precio durante las últimas 24 horas</div></div>
+        <div class="legend">● Cierre · intervalo 5 min</div>
+      </div>
+      <div class="canvas-wrap"><canvas id="ethChart" aria-label="Gráfico de precio de Ethereum en 24 horas"></canvas></div>
+      <div class="message" id="ethMessage" hidden></div>
+    </section>
+
+    <footer>
+      <span>Fuente: <a href="https://www.binance.com/" target="_blank" rel="noreferrer">Binance Spot</a> · pares cotizados en USDT</span>
+      <span id="updatedAt">Última actualización: —</span>
+      <span>Datos informativos; no constituyen asesoramiento financiero.</span>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script>
+    (() => {
+      'use strict';
+
+      const REFRESH_MS = 60_000;
+      const API = 'https://data-api.binance.vision/api/v3/klines';
+      const assets = {
+        btc: { symbol: 'BTCUSDT', color: '#f3a943', chart: null },
+        eth: { symbol: 'ETHUSDT', color: '#8d9cff', chart: null }
+      };
+      const $ = id => document.getElementById(id);
+      const money = value => new Intl.NumberFormat('en-US', {
+        style: 'currency', currency: 'USD', minimumFractionDigits: 2,
+        maximumFractionDigits: value >= 1000 ? 2 : 4
+      }).format(value);
+      const timeLabel = timestamp => new Date(timestamp).toLocaleTimeString('es-ES', {
+        hour: '2-digit', minute: '2-digit'
+      });
+
+      function makeChart(canvasId, color, label) {
+        const ctx = $(canvasId).getContext('2d');
+        return new Chart(ctx, {
+          type: 'line',
+          data: { labels: [], datasets: [{
+            label, data: [], borderColor: color, borderWidth: 1.7,
+            pointRadius: 0, pointHoverRadius: 3, pointHitRadius: 8,
+            tension: 0.12, fill: true,
+            backgroundColor: context => {
+              const chart = context.chart;
+              const { ctx, chartArea } = chart;
+              if (!chartArea) return color + '10';
+              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+              gradient.addColorStop(0, color + '30');
+              gradient.addColorStop(1, color + '00');
+              return gradient;
+            }
+          }] },
+          options: {
+            responsive: true, maintainAspectRatio: false, animation: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                displayColors: false,
+                backgroundColor: '#1b202b', borderColor: '#343c4c', borderWidth: 1,
+                titleColor: '#9aa5b8', bodyColor: '#f1f4f9', padding: 10,
+                callbacks: { label: item => ' ' + money(item.parsed.y) }
+              }
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                border: { display: false },
+                ticks: { color: '#778297', maxTicksLimit: 6, maxRotation: 0, autoSkip: true },
+              },
+              y: {
+                position: 'right',
+                grid: { color: '#ffffff0b', drawTicks: false },
+                border: { display: false },
+                ticks: {
+                  color: '#778297', maxTicksLimit: 5, padding: 9,
+                  callback: value => new Intl.NumberFormat('en-US', {
+                    notation: 'compact', maximumFractionDigits: 2
+                  }).format(value)
+                }
+              }
+            }
+          }
+        });
+      }
+
+      function setMessage(key, message, isError = false) {
+        const node = $(key + 'Message');
+        node.hidden = !message;
+        node.textContent = message || '';
+        node.classList.toggle('error', isError);
+      }
+
+      function renderAsset(key, candles) {
+        const closes = candles.map(c => c.close);
+        const current = closes[closes.length - 1];
+        const first = closes[0];
+        const high = Math.max(...candles.map(c => c.high));
+        const low = Math.min(...candles.map(c => c.low));
+        const change = ((current - first) / first) * 100;
+
+        $(key + 'Price').textContent = money(current);
+        $(key + 'High').textContent = money(high);
+        $(key + 'Low').textContent = money(low);
+
+        const changeNode = $(key + 'Change');
+        changeNode.textContent = (change > 0 ? '+' : '') + change.toFixed(2) + '%';
+        changeNode.classList.toggle('positive', change >= 0);
+        changeNode.classList.toggle('negative', change < 0);
+
+        const chart = assets[key].chart;
+        chart.data.labels = candles.map(c => timeLabel(c.time));
+        chart.data.datasets[0].data = closes;
+        chart.update('none');
+        setMessage(key, '');
+      }
+
+      async function fetchCandles(symbol) {
+        const url = `${API}?symbol=${symbol}&interval=5m&limit=288`;
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Binance respondió con HTTP ${response.status}`);
+        const rows = await response.json();
+        if (!Array.isArray(rows) || rows.length === 0) throw new Error('Binance no devolvió velas.');
+        return rows.map(row => ({
+          time: Number(row[0]),
+          high: Number(row[2]),
+          low: Number(row[3]),
+          close: Number(row[4])
+        })).filter(c => Number.isFinite(c.time) && Number.isFinite(c.close));
+      }
+
+      let busy = false;
+      async function refresh() {
+        if (busy || document.hidden) return;
+        busy = true;
+        $('refreshBtn').disabled = true;
+        $('statusText').textContent = 'Actualizando…';
+        $('statusDot').style.background = '#f3a943';
+
+        try {
+          const results = await Promise.allSettled([
+            fetchCandles(assets.btc.symbol),
+            fetchCandles(assets.eth.symbol)
+          ]);
+          const keys = ['btc', 'eth'];
+          let success = 0;
+
+          results.forEach((result, index) => {
+            const key = keys[index];
+            if (result.status === 'fulfilled') {
+              renderAsset(key, result.value);
+              success++;
+            } else {
+              setMessage(key, 'No se pudieron cargar los datos. ' + result.reason.message, true);
+              console.error(`Error cargando ${assets[key].symbol}:`, result.reason);
+            }
+          });
+
+          if (success) {
+            $('updatedAt').textContent = 'Última actualización: ' +
+              new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            $('statusText').textContent = success === 2 ? 'Datos en directo' : 'Datos parciales';
+            $('statusDot').style.background = success === 2 ? '#39d98a' : '#f3a943';
+          } else {
+            $('statusText').textContent = 'Error de conexión';
+            $('statusDot').style.background = '#ff657a';
+          }
+        } catch (error) {
+          $('statusText').textContent = 'Error de conexión';
+          $('statusDot').style.background = '#ff657a';
+          console.error(error);
+        } finally {
+          busy = false;
+          $('refreshBtn').disabled = false;
+        }
+      }
+
+      function init() {
+        if (typeof Chart === 'undefined') {
+          $('statusText').textContent = 'No se pudo cargar Chart.js';
+          $('statusDot').style.background = '#ff657a';
+          ['btc', 'eth'].forEach(key => setMessage(key, 'Comprueba tu conexión a internet para cargar la librería de gráficos.', true));
+          return;
+        }
+        assets.btc.chart = makeChart('btcChart', assets.btc.color, 'BTCUSDT');
+        assets.eth.chart = makeChart('ethChart', assets.eth.color, 'ETHUSDT');
+        $('refreshBtn').addEventListener('click', refresh);
+        refresh();
+        window.setInterval(() => {
+          if (!document.hidden) refresh();
+        }, REFRESH_MS);
+      }
+
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) refresh();
+      });
+      init();
+    })();
+  </script>
+</body>
+</html>
